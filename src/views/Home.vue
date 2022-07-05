@@ -14,10 +14,19 @@
       >
         <el-button size="small" type="primary">数据更新</el-button>
       </el-upload>
+      <div class="export_btn">
+        <el-button
+          size="small"
+          type="primary"
+          icon="el-icon-download"
+          @click="exportData()"
+          >数据下载</el-button
+        >
+      </div>
     </header>
     <section class="table">
       <div class="table_head">
-        <span class="label">选择时间范围：</span>
+        <span class="label">时间范围：</span>
         <el-date-picker
           v-model="value1"
           type="datetimerange"
@@ -35,8 +44,44 @@
           v-model="input"
           placeholder="请输入渠道ID"
         ></el-input>
+        <span class="label label2">操作系统：</span>
+        <el-select
+          v-model="caozuoxitong"
+          size="mini"
+          clearable
+          placeholder="请选择操作系统"
+        >
+          <el-option
+            v-for="item in options"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          >
+          </el-option>
+        </el-select>
+        <span class="label label2">推广产品：</span>
+        <el-select
+          v-model="tgcp"
+          size="mini"
+          clearable
+          placeholder="请选择推广产品"
+        >
+          <el-option
+            v-for="item in tgcpoptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          >
+          </el-option>
+        </el-select>
       </div>
-      <el-table :data="tableData" class="table_con">
+      <el-table
+        :data="tableData"
+        class="table_con"
+        stripe
+        border
+        :height="theight"
+      >
         <el-table-column fixed prop="riqi" label="日期"> </el-table-column>
         <el-table-column prop="name" label="推广产品"> </el-table-column>
         <el-table-column prop="xid" label="渠道ID"> </el-table-column>
@@ -60,6 +105,21 @@ export default {
       input: "",
       actionUrl: "http://47.94.250.82:8000/upload/one",
       instance: "",
+      theight: 500,
+      tgcp: "",
+      caozuoxitong: "",
+      options: [
+        {
+          label: "全部",
+          value: "a",
+        },
+      ],
+      tgcpoptions: [
+        {
+          label: "全部",
+          value: "a",
+        },
+      ],
     };
   },
   watch: {
@@ -69,11 +129,48 @@ export default {
     input() {
       this.getData();
     },
+    tgcp() {
+      this.getData();
+    },
+    caozuoxitong() {
+      this.getData();
+    },
+  },
+  beforeMount() {
+    this.getoptions();
+    this.gettgcpoptions();
   },
   mounted() {
+    this.$nextTick(() => {
+      let h = window.screen.availHeight;
+      this.theight = h - 140;
+    });
     this.getData();
   },
   methods: {
+    exportData() {
+      window.open("http://47.94.250.82:8000/static/导出数据.xls", "_blank");
+    },
+    getoptions() {
+      axios.get("http://47.94.250.82:8000/upload/xitong", {}).then((res) => {
+        res.data.result.map((el) => {
+          let obj = {};
+          obj.label = el.xitong;
+          obj.value = el.xitong;
+          this.options.push(obj);
+        });
+      });
+    },
+    gettgcpoptions() {
+      axios.get("http://47.94.250.82:8000/upload/chanpin", {}).then((res) => {
+        res.data.result.map((el) => {
+          let obj = {};
+          obj.label = el.name;
+          obj.value = el.name;
+          this.tgcpoptions.push(obj);
+        });
+      });
+    },
     handleExceed() {
       this.$message.warning("您只能上传单个的表格文件");
     },
@@ -125,6 +222,8 @@ export default {
             start: this.value1 ? this.value1[0] : undefined,
             end: this.value1 ? this.value1[1] : undefined,
             id: this.input ? this.input : undefined,
+            chanpin: this.tgcp ? this.tgcp : undefined,
+            xitong: this.caozuoxitong ? this.caozuoxitong : undefined,
           },
         })
         .then((res) => {
@@ -146,6 +245,10 @@ body {
   text-align: left;
   padding-left: 20px;
   font-size: 30px;
+  display: flex;
+}
+.export_btn {
+  margin-left: 10px;
 }
 .table {
   padding: 20px;
@@ -165,7 +268,8 @@ body {
 }
 .table_con {
   width: 100%;
-  height: calc(100vh - 140px);
+  max-height: calc(100vh - 140px);
+  overflow: auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
   margin-top: 20px;
 }
